@@ -37,7 +37,7 @@ class NotificationsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
+            constraints: const BoxConstraints(maxHeight: 500, maxWidth: 2000),
             child: ListView.builder(
               itemCount: notifications.length,
               itemBuilder: (context, index) {

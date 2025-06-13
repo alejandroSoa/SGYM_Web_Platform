@@ -61,30 +61,6 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFFE7E0F8),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.qr_code_2_rounded, size: 36, color: Color(0xFF7A5AF9)),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Acceso rápido: QR para entrar al gimnasio',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF413477),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
         ],
       ),
     );

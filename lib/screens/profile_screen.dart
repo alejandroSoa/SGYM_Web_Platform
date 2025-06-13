@@ -19,12 +19,12 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Alejandro Sandoval',
+                'Alfredo Cholico',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               const Text(
-                'alesan@gmail.com',
+                'aldocholico@gmail.com',
                 style: TextStyle(color: Colors.black54),
               ),
               const SizedBox(height: 24),
@@ -54,13 +54,11 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 24),
               const _OptionItem(title: 'Subscripción'),
               const SizedBox(height: 12),
-              const _OptionItem(title: 'QR'),
-              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    _EditableField(label: 'Nombre completo', value: 'Alejandro Sandoval'),
+                    _EditableField(label: 'Nombre completo', value: 'Alfredo Cholico'),
                     SizedBox(height: 12),
                     _EditableField(label: 'Contraseña', value: '********'),
                     SizedBox(height: 12),

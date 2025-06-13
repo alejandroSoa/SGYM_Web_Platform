@@ -39,78 +39,97 @@ class _MainLayoutState extends State<MainLayout> {
     Screenconfig(view: const NotificationsScreen(), title: 'Notificaciones', showBackButton: true, showProfileIcon: false, showNotificationIcon: false, showBottomNav: false),
   ];
 
+    @override
+    Widget build(BuildContext context) {
+      final config = viewConfigs[currentIndex];
 
-  @override
-  Widget build(BuildContext context) {
-    final config = viewConfigs[currentIndex];
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Row(
+            children: [
+              // Sidebar
+              if (config.showBottomNav)
+                Container(
+                  width: 300,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 30),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      _buildSidebarButton(index: 0, label: 'Inicio', icon: Icons.home),
+                      const SizedBox(height: 10),
+                      _buildSidebarButton(index: 1, label: 'Citas', icon: Icons.calendar_today),
+                      const SizedBox(height: 10),
+                      _buildSidebarButton(index: 2, label: 'Dietas', icon: Icons.restaurant),
+                      const SizedBox(height: 10),
+                      _buildSidebarButton(index: 3, label: 'Rutinas', icon: Icons.fitness_center),
+                    ],
+                  ),
+                ),
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            CustomTopBar(
-              username: 'Alejandro',
-              profileImage: 'assets/profile.png',
-              currentViewTitle: config.title,
-              showBackButton: config.showBackButton,
-              showProfileIcon: config.showProfileIcon,
-              showNotificationIcon: config.showNotificationIcon,
-              onBack: () => setState(() => currentIndex = 0),
-              onProfileTap: () => setState(() => currentIndex = 4),
-              onNotificationsTap: () => setState(() => currentIndex = 5),
-            ),
-            Expanded(child: config.view),
-          ],
-        ),
-      ),
-      bottomNavigationBar: config.showBottomNav
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 25, left: 15, right: 15),
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavButton(index: 0, label: 'Inicio'),
-                  _buildNavButton(index: 1, label: 'Citas'),
-                  _buildNavButton(index: 2, label: 'Dietas'),
-                  _buildNavButton(index: 3, label: 'Rutinas'),
-                ],
-              ),
-            )
-          : null,
-    );
-  }
-
-  Widget _buildNavButton({required int index, required String label}) {
-    final isSelected = currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => currentIndex = index),
-      child: Container(
-        height: 65,
-        width: isSelected ? 150 : 65,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF7C4DFF) : const Color(0xFF2C2C2C),
-          borderRadius: BorderRadius.circular(50),
-        ),
-        child: Center(
-          child: isSelected
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              // Contenido principal
+              Expanded(
+                child: Column(
                   children: [
-                    Container(width: 20, height: 20, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text(label, style: const TextStyle(color: Colors.white)),
+                    CustomTopBar(
+                      username: 'Cholico',
+                      profileImage: 'assets/profile.png',
+                      currentViewTitle: config.title,
+                      showBackButton: config.showBackButton,
+                      showProfileIcon: config.showProfileIcon,
+                      showNotificationIcon: config.showNotificationIcon,
+                      onBack: () => setState(() => currentIndex = 0),
+                      onProfileTap: () => setState(() => currentIndex = 4),
+                      onNotificationsTap: () => setState(() => currentIndex = 5),
+                    ),
+                    Expanded(child: config.view),
                   ],
-                )
-              : Container(width: 16, height: 16, color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
+
+      );
+    }
+
+
+    Widget _buildSidebarButton({
+      required int index,
+      required String label,
+      required IconData icon,
+    }) {
+      final isSelected = currentIndex == index;
+      return GestureDetector(
+        onTap: () => setState(() => currentIndex = index),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF7C4DFF) : const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+
 }
 
