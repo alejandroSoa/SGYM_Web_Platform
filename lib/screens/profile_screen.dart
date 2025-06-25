@@ -66,13 +66,17 @@ import '../services/ProfileService.dart';
                   children: [
                     _InfoBox(
                       icon: Icons.male,
-                      label: 'Gender',
-                      value: 'Male',
+                      label: 'Género',
+                      value: profile!.gender == 'M'
+                          ? 'Masculino'
+                          : profile!.gender == 'F'
+                              ? 'Femenino'
+                              : profile!.gender,
                     ),
                     _InfoBox(
                       icon: Icons.calendar_month,
-                      label: 'Age',
-                      value: '20 yrs',
+                      label: 'Nacimiento',
+                      value: profile!.birthDate,
                     ),
                   ],
                 ),
