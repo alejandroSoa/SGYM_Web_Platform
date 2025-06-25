@@ -16,9 +16,7 @@ class UserService {
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
-  }
-
-  // Elimina el token (opcional)
+  }  // Elimina el token (opcional)
   static Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
