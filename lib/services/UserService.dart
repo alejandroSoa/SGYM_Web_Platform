@@ -58,5 +58,62 @@ class UserService {
     }
   }
 
+    /// Servicio: Actualizar datos de un usuario
+  static Future<Map<String, dynamic>?> updateUser({
+    required int userId,
+    String? email,
+    int? roleId,
+    bool? isActive,
+  }) async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    // Construye el body solo con los campos permitidos
+    final Map<String, dynamic> body = {};
+    if (email != null) body['email'] = email;
+    if (roleId != null) body['role_id'] = roleId;
+    if (isActive != null) body['is_active'] = isActive;
+
+    final response = await http.put(
+      Uri.parse('$_baseUrl/users/$userId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['data'];
+    } else {
+      // Puedes agregar manejo de errores aquí si lo deseas
+      return null;
+    }
+  }
+
+  /// Servicio: Eliminar usuario por ID
+  static Future<Map<String, dynamic>?> deleteUser(int userId) async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/users/$userId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 404) {
+      // Usuario no encontrado
+      return json.decode(response.body);
+    } else {
+      // Otro error
+      return null;
+    }
+  }
+
 
   }

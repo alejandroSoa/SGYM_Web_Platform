@@ -20,8 +20,7 @@ class ProfileService {
   }
 
   static Future<Profile?> getProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final profileJson = prefs.getString(_profileKey);
+    final prefs = await SharedPreferences.getInstance();    final profileJson = prefs.getString(_profileKey);
     if (profileJson == null) return null;
     return Profile.fromJson(json.decode(profileJson));
   }
@@ -56,5 +55,64 @@ class ProfileService {
       } else {
         return null;
       }
+  }
+
+      /// Servicio: Actualizar perfil de usuario
+    static Future<Profile?> createProfile({
+      required int userId,
+      required String fullName,
+      required String phone,
+      required String birthDate,
+      required String gender,
+      String? photoUrl,
+    }) async {
+      final token = await UserService.getToken();
+      if (token == null) return null;
+
+      final body = {
+        'user_id': userId,
+        'full_name': fullName,
+        'phone': phone,
+        'birth_date': birthDate,
+        'gender': gender,
+        if (photoUrl != null) 'photo_url': photoUrl,
+      };
+
+      final response = await http.post(
+        Uri.parse('https://localhost:3333/users/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(body),
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return Profile.fromJson(data['data']);
+      } else {
+        return null;
+      }
+  }
+
+
+    /// Servicio: Eliminar perfil de usuario por ID
+  static Future<bool> deleteProfile(int userId) async {
+    final token = await UserService.getToken();
+    if (token == null) return false;
+
+    final response = await http.delete(
+      Uri.parse('https://localhost:3333/users/$userId/profile'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true; // Eliminación exitosa
+    } else {
+      return false; // Error o no encontrado
+    }
   }
 }
