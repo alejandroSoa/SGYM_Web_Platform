@@ -7,17 +7,40 @@ import 'package:sgym/screens/profile_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'widgets/custom_top_bar.dart';
 import 'config/ScreenConfig.dart';
+import 'screens/first_time_screen.dart';
+import 'services/InitializationService.dart';
+import 'services/UserService.dart';
+import 'widgets/oauth_callback_screen.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final isFirstTime = await InitializationService.isFirstTimeUser();
+  final token = await UserService.getToken();
+  runApp(MyApp(isFirstTime: isFirstTime, hasToken: token != null));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isFirstTime;
+  final bool hasToken;
+
+  const MyApp({super.key, required this.isFirstTime, this.hasToken = false});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MainLayout(),
       debugShowCheckedModeBanner: false,
+      initialRoute: isFirstTime ? '/first-time' : (hasToken ? '/' : '/oauth-callback'),
+      routes: {
+        '/': (context) => MainLayout(),
+        '/first-time': (context) => FirstTimeScreen(
+              onComplete: () async {
+                if (context.mounted) {
+                  runApp(MyApp(isFirstTime: false, hasToken: hasToken));
+                }
+              },
+            ),
+        '/oauth-callback': (context) => OAuthCallbackScreen(),
+      },
     );
   }
 }

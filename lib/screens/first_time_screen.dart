@@ -1,6 +1,7 @@
 import '../services/InitializationService.dart';
 import '../services/AuthService.dart'; 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class FirstTimeScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -16,42 +17,33 @@ class _FirstTimeScreenState extends State<FirstTimeScreen> {
   int _currentPage = 0;
   bool _hasReachedEnd = false;
 
-  Future<void> _continueToApp() async {
-    String? authResult;
-    bool success = false;
-    try {
-      success = await AuthService.authenticateWithOAuth(context)
-        .then((value) {
-          return value;
-        });
-      authResult = "Autenticación completada.\nResultado: $success";
-    } catch (e) {
-      authResult = "Error: $e";
-    }
-  
-    if (mounted) {
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(success ? 'Resultado de autenticación' : 'Error de autenticación'),
-          content: Text(authResult ?? 'Sin información'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cerrar'),
+    Future<void> _continueToApp() async {
+      try {
+        await AuthService.authenticateWithOAuth();
+        // 👇 Nada después de esta línea se ejecutará en web,
+        // porque se va a redirigir completamente a otra URL.
+      } catch (e) {
+        // Por si el launch falla antes de redirigir
+        if (mounted) {
+          await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error de autenticación'),
+              content: Text('No se pudo iniciar la autenticación:\n$e'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cerrar'),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    }
-  
-    if (success) {
-      await InitializationService.markFirstTimeDone();
-      if (mounted) {
-        widget.onComplete();
+          );
+        }
       }
     }
-  }
+
+
+
   final List<Map<String, String>> _carouselData = [
     {
       'title': 'Bienvenido a SGym',
@@ -90,9 +82,7 @@ class _FirstTimeScreenState extends State<FirstTimeScreen> {
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
-                if (index == 2) {
-                  _hasReachedEnd = true;
-                }
+                _hasReachedEnd = index == _carouselData.length - 1;
               });
             },
             itemCount: _carouselData.length,
@@ -137,7 +127,44 @@ class _FirstTimeScreenState extends State<FirstTimeScreen> {
                 ),
               ),
             ),
-          ),          
+          ),
+          // Flechas de navegación solo en web
+          if (kIsWeb)
+            Positioned(
+              left: 10,
+              top: 0,
+              bottom: 0,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios, size: 32),
+                color: _currentPage > 0 ? Colors.black : Colors.black26,
+                onPressed: _currentPage > 0
+                    ? () {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.ease,
+                        );
+                      }
+                    : null,
+              ),
+            ),
+          if (kIsWeb)
+            Positioned(
+              right: 10,
+              top: 0,
+              bottom: 0,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 32),
+                color: _currentPage < _carouselData.length - 1 ? Colors.black : Colors.black26,
+                onPressed: _currentPage < _carouselData.length - 1
+                    ? () {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.ease,
+                        );
+                      }
+                    : null,
+              ),
+            ),
           if (_hasReachedEnd)
             Positioned(
               bottom: 50,
