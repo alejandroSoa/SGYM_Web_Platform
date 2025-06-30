@@ -3,9 +3,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class AuthService {
     static Future<void> authenticateWithOAuth() async {
-      const redirectUri = 'http://localhost:52803/#/oauth-callback';
-      final authUrl = Uri.https(
-        'be23-2806-267-1482-1823-4104-245b-590a-3de7.ngrok-free.app',
+      const redirectUri = 'http://localhost:55409/#/oauth-callback';
+      final authUrl = Uri.http(
+        '143.110.150.81',
         '/oauth/login',
         {
           'redirect_uri': redirectUri,

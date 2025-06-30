@@ -21,6 +21,22 @@ class UserService {
     await prefs.remove(_tokenKey);
   }
 
+  // Establece el token de actualización en SharedPreferences
+  static Future<void> setRefreshToken(String? refreshToken) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (refreshToken != null) {
+      await prefs.setString('refresh_token', refreshToken);
+    } else {
+      await prefs.remove('refresh_token');
+    }
+  }
+
+  // Obtiene el token de actualización de SharedPreferences
+  static Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('refresh_token');
+  }
+
   static Future<void> setUser(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_data', json.encode(user));

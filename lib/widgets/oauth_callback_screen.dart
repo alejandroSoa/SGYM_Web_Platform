@@ -23,9 +23,11 @@ class _OAuthCallbackScreenState extends State<OAuthCallbackScreen> {
 
     // Extraer el token de los parámetros de la query
     String? token = uri.queryParameters['access_token'];
+    String? refreshToken = uri.queryParameters['refresh_token'];
 
     if (token != null && token.isNotEmpty) {
       await UserService.setToken(token);
+      await UserService.setRefreshToken(refreshToken);
       //await UserService.fetchUser();
       await InitializationService.markFirstTimeDone();
 
