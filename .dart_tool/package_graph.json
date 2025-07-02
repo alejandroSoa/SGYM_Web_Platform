@@ -11,8 +11,10 @@
         "cupertino_icons",
         "english_words",
         "flutter",
+        "flutter_dotenv",
         "http",
         "provider",
+        "qr_flutter",
         "shared_preferences",
         "uni_links",
         "url_launcher"
@@ -141,6 +143,13 @@
         "meta",
         "sky_engine",
         "vector_math"
+      ]
+    },
+    {
+      "name": "flutter_dotenv",
+      "version": "5.2.1",
+      "dependencies": [
+        "flutter"
       ]
     },
     {
@@ -546,6 +555,21 @@
       "dependencies": [
         "meta",
         "path"
+      ]
+    },
+    {
+      "name": "qr_flutter",
+      "version": "4.1.0",
+      "dependencies": [
+        "flutter",
+        "qr"
+      ]
+    },
+    {
+      "name": "qr",
+      "version": "3.0.2",
+      "dependencies": [
+        "meta"
       ]
     }
   ],

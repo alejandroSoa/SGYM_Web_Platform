@@ -27,7 +27,6 @@ class _OAuthCallbackScreenState extends State<OAuthCallbackScreen> {
 
     if (token != null && token.isNotEmpty) {
       await UserService.setToken(token);
-      await UserService.setRefreshToken(refreshToken);
       //await UserService.fetchUser();
       await InitializationService.markFirstTimeDone();
 

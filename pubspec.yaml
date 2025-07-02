@@ -28,6 +28,8 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  qr_flutter: ^4.0.0
+  flutter_dotenv: ^5.2.1
   flutter:
     sdk: flutter
   http: ^1.2.1
@@ -66,6 +68,7 @@ flutter:
 
   assets:
     - assets/
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

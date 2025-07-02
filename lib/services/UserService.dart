@@ -1,10 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import '../network/NetworkService.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class UserService {
   static const String _tokenKey = 'oauth-token';
-  static const String _baseUrl = 'https://c914-2806-267-1482-1823-b83b-4950-e233-f123.ngrok-free.app';
 
   static Future<void> setToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -21,112 +21,63 @@ class UserService {
     await prefs.remove(_tokenKey);
   }
 
-  // Establece el token de actualización en SharedPreferences
-  static Future<void> setRefreshToken(String? refreshToken) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (refreshToken != null) {
-      await prefs.setString('refresh_token', refreshToken);
-    } else {
-      await prefs.remove('refresh_token');
-    }
-  }
-
-  // Obtiene el token de actualización de SharedPreferences
-  static Future<String?> getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('refresh_token');
-  }
-
   static Future<void> setUser(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_data', json.encode(user));
   }
 
-  // Obtiene el usuario de SharedPreferences
   static Future<Map<String, dynamic>?> getUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('user_data');
     if (userJson == null) return null;
-    return json.decode(userJson) as Map<String, dynamic>;
+    return json.decode(userJson) as Map<String, dynamic>?;
   }
 
-  // Servicio: Obtener datos de un usuario
-  static Future<Map<String, dynamic>?> fetchUser([int? userId]) async {
-    final token = await getToken();
-    if (token == null) return null;
-  
-    final url = userId != null 
-        ? '$_baseUrl/users/${userId.toString()}'
-        : '$_baseUrl/users';
-  
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-  
+static Future<Map<String, dynamic>?> fetchUser([int? userId]) async {
+  final baseUrl = dotenv.env['BUSINESS_BASE_URL'];
+
+    final fullUrl = userId != null 
+        ? '$baseUrl/users/${userId.toString()}'
+        : '$baseUrl/users';
+
+    final response = await NetworkService.get(fullUrl);
+
     if (response.statusCode == 200) {
-        setUser(json.decode(response.body)['data']);
+      final responseData = json.decode(response.body)['data'];
+      
+      if (responseData is List && responseData.isNotEmpty) {
+        return responseData.first as Map<String, dynamic>;
+      }
+      
+      if (responseData is Map<String, dynamic>) {
+        return responseData;
+      }
+      
+      return null;
     } else {
       return null;
     }
   }
 
-    /// Servicio: Actualizar datos de un usuario
   static Future<Map<String, dynamic>?> updateUser({
     required int userId,
     String? email,
     int? roleId,
     bool? isActive,
   }) async {
-    final token = await getToken();
-    if (token == null) return null;
+    final baseUrl = dotenv.env['BUSINESS_BASE_URL'];
 
-    // Construye el body solo con los campos permitidos
     final Map<String, dynamic> body = {};
     if (email != null) body['email'] = email;
     if (roleId != null) body['role_id'] = roleId;
     if (isActive != null) body['is_active'] = isActive;
+    final fullUrl ='$baseUrl/users/${userId.toString()}';
 
-    final response = await http.put(
-      Uri.parse('$_baseUrl/users/$userId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(body),
-    );
+    final response = await NetworkService.put(fullUrl);
 
     if (response.statusCode == 200) {
       return json.decode(response.body)['data'];
     } else {
-      // Puedes agregar manejo de errores aquí si lo deseas
-      return null;
-    }
-  }
-
-  /// Servicio: Eliminar usuario por ID
-  static Future<Map<String, dynamic>?> deleteUser(int userId) async {
-    final token = await getToken();
-    if (token == null) return null;
-
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/users/$userId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 404) {
-      // Usuario no encontrado
-      return json.decode(response.body);
-    } else {
-      // Otro error
       return null;
     }
   }
