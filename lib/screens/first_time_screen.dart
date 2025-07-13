@@ -167,23 +167,28 @@ class _FirstTimeScreenState extends State<FirstTimeScreen> {
           if (_hasReachedEnd)
             Positioned(
               bottom: 50,
-              left: 20,
-              right: 20,
-              child: ElevatedButton(
-                onPressed: _continueToApp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                child: const Text(
-                  'Empezar',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SizedBox(
+                  width: 180, // ancho reducido
+                  child: ElevatedButton(
+                    onPressed: _continueToApp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12), // padding reducido
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text(
+                      'Empezar',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14, // texto más pequeño
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sgym/screens/diets_screen.dart';
 import 'package:sgym/screens/home_screen.dart';
 import 'package:sgym/screens/appointments_screen.dart';
 import 'package:sgym/screens/routines_screen.dart';
 import 'package:sgym/screens/profile_screen.dart';
+import 'package:sgym/services/ProfileService.dart';
 import 'screens/notifications_screen.dart';
 import 'widgets/custom_top_bar.dart';
 import 'config/ScreenConfig.dart';
@@ -14,6 +16,7 @@ import 'widgets/oauth_callback_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
   final isFirstTime = await InitializationService.isFirstTimeUser();
   final token = await UserService.getToken();
   runApp(MyApp(isFirstTime: isFirstTime, hasToken: token != null));
@@ -48,10 +51,12 @@ class MyApp extends StatelessWidget {
 class MainLayout extends StatefulWidget {
   @override
   State<MainLayout> createState() => _MainLayoutState();
+  
 }
 
 class _MainLayoutState extends State<MainLayout> {
   int currentIndex = 0;
+  String? profileName;
 
   final List<Screenconfig> viewConfigs = [
     Screenconfig(view: const HomeScreen()), 
@@ -61,6 +66,19 @@ class _MainLayoutState extends State<MainLayout> {
     Screenconfig(view: const ProfileScreen(), title: 'Perfil', showBackButton: true, showProfileIcon: false, showNotificationIcon: false, showBottomNav: false),
     Screenconfig(view: const NotificationsScreen(), title: 'Notificaciones', showBackButton: true, showProfileIcon: false, showNotificationIcon: false, showBottomNav: false),
   ];
+
+    @override
+    void initState() {
+      super.initState();
+      _loadProfileName();
+    }
+
+   Future<void> _loadProfileName() async {
+      final profile = await ProfileService.getProfile();
+      setState(() {
+        profileName = profile?.fullName ?? 'Usuario';
+      });
+    }
 
     @override
     Widget build(BuildContext context) {
@@ -99,7 +117,7 @@ class _MainLayoutState extends State<MainLayout> {
                 child: Column(
                   children: [
                     CustomTopBar(
-                      username: 'Cholico',
+                      username: profileName ?? 'Usuario',
                       profileImage: 'assets/profile.png',
                       currentViewTitle: config.title,
                       showBackButton: config.showBackButton,

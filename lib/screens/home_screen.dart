@@ -97,7 +97,7 @@ class HomeScreen extends StatelessWidget {
             citaPrincipal: 'Consulta coach a las 4:00 PM',
           ),
           const SizedBox(height: 12),
-          _ClearPreferencesButton(),
+          Center(child: _ClearPreferencesButton()),
           const SizedBox(height: 12),
 
           FutureBuilder<String?>(
@@ -192,6 +192,7 @@ class _ClearPreferencesButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
+      width: 250, // ancho reducido
       child: ElevatedButton(
         onPressed: () async {
           final prefs = await SharedPreferences.getInstance();
@@ -214,13 +215,13 @@ class _ClearPreferencesButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.delete_forever, color: Colors.white),
-            const SizedBox(width: 8),
+            const Icon(Icons.delete_forever, color: Colors.white, size: 20),
+            const SizedBox(width: 6),
             const Text(
               'Borrar User Beta Test',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 14, // texto más pequeño
                 fontWeight: FontWeight.bold,
               ),
             ),

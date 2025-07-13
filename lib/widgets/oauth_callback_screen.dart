@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sgym/services/InitializationService.dart';
+import 'package:sgym/services/ProfileService.dart';
 import '../services/UserService.dart';
 import '../main.dart';
 import 'dart:html' as html;
@@ -30,7 +31,19 @@ class _OAuthCallbackScreenState extends State<OAuthCallbackScreen> {
       //await UserService.fetchUser();
       await InitializationService.markFirstTimeDone();
 
-      // Limpiar la URL de la barra de direcciones sin recargar la página
+      final userData = await UserService.fetchUser();
+      if (userData != null && userData is List && userData.isNotEmpty) {
+        final user = userData[0];
+        await UserService.setUser(user.toJson());
+
+        final profile = await ProfileService.fetchProfile();
+        if (profile != null) {
+          await ProfileService.setProfile(profile);
+        }
+        print('Perfil guardado: ${profile?.toJson()}');
+        print('Usuario guardado: ${user.toJson()}');
+      }
+
       html.window.history.replaceState(
         null, 
         'OAuth Redirect', 

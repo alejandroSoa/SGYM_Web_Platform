@@ -1,5 +1,16 @@
-2025/06/30-16:56:58.783 4ec0 Reusing MANIFEST C:\Users\tioma\AppData\Local\Temp\flutter_tools.cad764d\flutter_tools_chrome_device.710f967f\Default\shared_proto_db/MANIFEST-000001
-2025/06/30-16:56:58.784 4ec0 Recovering log #7
-2025/06/30-16:56:58.784 4ec0 Reusing old log C:\Users\tioma\AppData\Local\Temp\flutter_tools.cad764d\flutter_tools_chrome_device.710f967f\Default\shared_proto_db/000007.log 
-2025/06/30-16:56:58.785 4ec0 Delete type=0 #3
-2025/06/30-16:56:58.785 4ec0 Delete type=0 #4
+2025/07/13-17:13:54.825 744 Reusing MANIFEST C:\Users\elcho\AppData\Local\Temp\flutter_tools.de24d581\flutter_tools_chrome_device.5f6cf0ae\Default\shared_proto_db/MANIFEST-000001
+2025/07/13-17:13:54.825 744 Recovering log #19
+2025/07/13-17:13:54.827 744 Reusing old log C:\Users\elcho\AppData\Local\Temp\flutter_tools.de24d581\flutter_tools_chrome_device.5f6cf0ae\Default\shared_proto_db/000019.log 
+2025/07/13-17:13:54.828 744 Delete type=0 #3
+2025/07/13-17:13:54.828 744 Delete type=0 #4
+2025/07/13-17:13:54.828 744 Delete type=0 #7
+2025/07/13-17:13:54.828 744 Delete type=2 #8
+2025/07/13-17:13:54.828 744 Delete type=0 #10
+2025/07/13-17:13:54.828 744 Delete type=2 #11
+2025/07/13-17:13:54.828 744 Delete type=0 #13
+2025/07/13-17:13:54.828 744 Delete type=2 #14
+2025/07/13-17:13:54.828 744 Delete type=0 #16
+2025/07/13-17:13:54.828 744 Delete type=2 #17
+2025/07/13-17:16:35.674 884 Level-0 table #24: started
+2025/07/13-17:16:35.678 884 Level-0 table #24: 134852 bytes OK
+2025/07/13-17:16:35.679 884 Delete type=0 #19

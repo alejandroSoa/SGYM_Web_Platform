@@ -4,8 +4,29 @@ import '../interfaces/user/qr_interface.dart';
 import 'UserService.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../network/NetworkService.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileService {
+  static const String _profileKey = 'user_profile';
+
+  static Future<void> setProfile(Profile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_profileKey, json.encode({
+      'user_id': profile.userId,
+      'full_name': profile.fullName,
+      'phone': profile.phone,
+      'birth_date': profile.birthDate,
+      'gender': profile.gender,
+      'photo_url': profile.photoUrl,
+    }));
+  }
+
+  static Future<Profile?> getProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString(_profileKey);
+    if (profileJson == null) return null;
+    return Profile.fromJson(json.decode(profileJson));
+  }
 
   static Future<Profile?> fetchProfile() async {
     final User = await UserService.getUser();
@@ -75,20 +96,22 @@ class ProfileService {
 
   static Future<QrCode?> fetchQrCode() async {
     final User = await UserService.getUser();
-
     final idPath = await User?['id'];
     final baseUrl = dotenv.env['AUTH_BASE_URL'];
     final fullUrl = '$baseUrl/users/$idPath/qr';
-    
     final response = await NetworkService.post(fullUrl);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final qr = QrCode.fromJson(data['data']);
-        return qr;
-      } else {
-        throw Exception(response.body);
+    // Intenta parsear el cuerpo siempre
+    final body = response.body;
+    try {
+      final data = json.decode(body);
+      if (data != null && data['data'] != null && data['data']['qr_image_base64'] != null) {
+        return QrCode.fromJson(data['data']);
       }
+    } catch (_) {
+      // Si no se puede parsear, retorna null
+    }
+    return null;
   }
 
     //Probar funcionalidad
