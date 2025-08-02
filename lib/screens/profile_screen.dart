@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../interfaces/user/profile_interface.dart';
+import '../interfaces/user/qr_interface.dart';
 import '../services/ProfileService.dart';
 import 'dart:convert';
 
@@ -14,6 +14,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   Profile? profile;
   bool loading = true;
+  bool isUpdating = false;
+  bool isLoadingQr = false;
 
   @override
   void initState() {
@@ -22,202 +24,1212 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> fetchProfile() async {
-    final fetchedProfile = await ProfileService.getProfile();
+    final fetchedProfile = await ProfileService.fetchProfile();
 
     setState(() {
       profile = fetchedProfile;
       loading = false;
     });
+  }
 
+  Future<void> _showEditDialog(
+    String fieldName,
+    String currentValue,
+    String fieldKey,
+  ) async {
+    if (fieldKey == 'gender') {
+      _showGenderDialog(currentValue);
+      return;
+    }
+
+    if (fieldKey == 'birthDate') {
+      _showDateDialog(currentValue);
+      return;
+    }
+
+    if (fieldKey == 'password') {
+      _showPasswordDialog();
+      return;
+    }
+
+    final TextEditingController controller = TextEditingController(
+      text: currentValue,
+    );
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Scaffold(
+          backgroundColor: Colors.black.withOpacity(0.5),
+          body: SafeArea(
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Editar $fieldName',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        labelText: fieldName,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF2F2FF),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Cancelar',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: isUpdating
+                              ? null
+                              : () async {
+                                  final newValue = controller.text.trim();
+                                  if (newValue.isNotEmpty &&
+                                      newValue != currentValue) {
+                                    Navigator.of(context).pop();
+                                    await _updateField(fieldKey, newValue);
+                                  } else {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7012DA),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Aceptar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPasswordDialog() async {
+    final TextEditingController currentPasswordController =
+        TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController =
+        TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Scaffold(
+          backgroundColor: Colors.black.withOpacity(0.5),
+          body: SafeArea(
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Cambiar Contraseña',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: currentPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Contraseña Actual',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF2F2FF),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: newPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Nueva Contraseña',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF2F2FF),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmar Nueva Contraseña',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF2F2FF),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Cancelar',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: isUpdating
+                              ? null
+                              : () async {
+                                  final currentPassword =
+                                      currentPasswordController.text.trim();
+                                  final newPassword = newPasswordController.text
+                                      .trim();
+                                  final confirmPassword =
+                                      confirmPasswordController.text.trim();
+
+                                  if (currentPassword.isEmpty ||
+                                      newPassword.isEmpty ||
+                                      confirmPassword.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Todos los campos son obligatorios',
+                                        ),
+                                        backgroundColor: Color.fromARGB(
+                                          152,
+                                          244,
+                                          67,
+                                          54,
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  if (newPassword != confirmPassword) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Las contraseñas no coinciden',
+                                        ),
+                                        backgroundColor: Color.fromARGB(
+                                          152,
+                                          244,
+                                          67,
+                                          54,
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  Navigator.of(context).pop();
+                                  await _updatePassword(
+                                    currentPassword,
+                                    newPassword,
+                                    confirmPassword,
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7012DA),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Actualizar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showGenderDialog(String currentGender) async {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Scaffold(
+          backgroundColor: Colors.black.withOpacity(0.5),
+          body: SafeArea(
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 40,
+                ),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Seleccionar Género',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: isUpdating
+                                ? null
+                                : () {
+                                    Navigator.of(context).pop();
+                                    _updateField('gender', 'M');
+                                  },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: currentGender == 'M'
+                                    ? const Color(0xFF7012DA)
+                                    : const Color(0xFFF2F2FF),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: currentGender == 'M'
+                                      ? const Color(0xFF7012DA)
+                                      : Colors.grey[300]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.male,
+                                    size: 24,
+                                    color: currentGender == 'M'
+                                        ? Colors.white
+                                        : const Color(0xFF7012DA),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Masculino',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: currentGender == 'M'
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: isUpdating
+                                ? null
+                                : () {
+                                    Navigator.of(context).pop();
+                                    _updateField('gender', 'F');
+                                  },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: currentGender == 'F'
+                                    ? const Color(0xFF7012DA)
+                                    : const Color(0xFFF2F2FF),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: currentGender == 'F'
+                                      ? const Color(0xFF7012DA)
+                                      : Colors.grey[300]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.female,
+                                    size: 24,
+                                    color: currentGender == 'F'
+                                        ? Colors.white
+                                        : const Color(0xFF7012DA),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Femenino',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: currentGender == 'F'
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Cancelar',
+                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showDateDialog(String currentDate) async {
+    DateTime? selectedDate;
+
+    if (currentDate.isNotEmpty) {
+      try {
+        selectedDate = DateTime.parse(currentDate);
+      } catch (e) {
+        selectedDate = DateTime.now();
+      }
+    } else {
+      selectedDate = DateTime.now();
+    }
+
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF7012DA),
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      final formattedDate =
+          "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+      await _updateField('birthDate', formattedDate);
+    }
+  }
+
+  Future<void> _updateField(String fieldKey, String newValue) async {
+    if (profile == null || isUpdating) return;
+
+    setState(() {
+      isUpdating = true;
+    });
+
+    try {
+      Profile? updatedProfile;
+
+      switch (fieldKey) {
+        case 'fullName':
+          updatedProfile = await ProfileService.updateProfile(
+            profile!,
+            fullName: newValue,
+          );
+          break;
+        case 'phone':
+          updatedProfile = await ProfileService.updateProfile(
+            profile!,
+            phone: newValue,
+          );
+          break;
+        case 'birthDate':
+          updatedProfile = await ProfileService.updateProfile(
+            profile!,
+            birthDate: newValue,
+          );
+          break;
+        case 'gender':
+          updatedProfile = await ProfileService.updateProfile(
+            profile!,
+            gender: newValue,
+          );
+          break;
+        case 'photoUrl':
+          updatedProfile = await ProfileService.updateProfile(
+            profile!,
+            photoUrl: newValue,
+          );
+          break;
+      }
+
+      if (updatedProfile != null) {
+        setState(() {
+          profile = updatedProfile;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Campo actualizado correctamente'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Color(0xFF019E83),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al actualizar el campo'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Color.fromARGB(152, 244, 67, 54),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error de conexión';
+
+        try {
+          final errorString = e.toString();
+          if (errorString.contains('Exception: ')) {
+            final jsonString = errorString.substring(errorString.indexOf('{'));
+            final errorData = json.decode(jsonString);
+
+            if (errorData['data'] != null) {
+              final fieldErrors = errorData['data'] as Map<String, dynamic>;
+
+              String apiFieldKey;
+              switch (fieldKey) {
+                case 'fullName':
+                  apiFieldKey = 'full_name';
+                  break;
+                case 'phone':
+                  apiFieldKey = 'phone';
+                  break;
+                case 'birthDate':
+                  apiFieldKey = 'birth_date';
+                  break;
+                case 'gender':
+                  apiFieldKey = 'gender';
+                  break;
+                case 'photoUrl':
+                  apiFieldKey = 'photo_url';
+                  break;
+                default:
+                  apiFieldKey = fieldKey;
+              }
+
+              if (fieldErrors[apiFieldKey] != null) {
+                errorMessage = fieldErrors[apiFieldKey].toString();
+              } else if (errorData['msg'] != null) {
+                errorMessage = errorData['msg'].toString();
+              }
+            }
+          }
+        } catch (parseError) {
+          errorMessage = 'Error al actualizar el campo';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 3),
+            backgroundColor: const Color.fromARGB(152, 244, 67, 54),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isUpdating = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updatePassword(
+    String currentPassword,
+    String newPassword,
+    String confirmPassword,
+  ) async {
+    if (isUpdating) return;
+
+    setState(() {
+      isUpdating = true;
+    });
+
+    try {
+      await ProfileService.updatePassword(
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contraseña actualizada correctamente'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Color(0xFF019E83),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error de conexión';
+
+        try {
+          final errorString = e.toString();
+          if (errorString.contains('Exception: ')) {
+            final jsonString = errorString.substring(errorString.indexOf('{'));
+            final errorData = json.decode(jsonString);
+
+            if (errorData['msg'] != null) {
+              errorMessage = errorData['msg'].toString();
+            }
+          }
+        } catch (parseError) {
+          errorMessage = 'Error al actualizar la contraseña';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 3),
+            backgroundColor: const Color.fromARGB(152, 244, 67, 54),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isUpdating = false;
+        });
+      }
+    }
+  }
+
+  String _getGenderDisplay(String gender) {
+    switch (gender) {
+      case 'M':
+        return 'Masculino';
+      case 'F':
+        return 'Femenino';
+      default:
+        return gender;
+    }
+  }
+
+  Future<void> _showQrCode() async {
+    print('=== INICIANDO _showQrCode ==='); // Debug log
+    setState(() {
+      isLoadingQr = true;
+    });
+
+    try {
+      print('Llamando a ProfileService.fetchQrCode()...'); // Debug log
+      final qrData = await ProfileService.fetchQrCode();
+      print('Respuesta de ProfileService recibida exitosamente'); // Debug log
+
+      if (qrData != null) {
+        print('QR Base64 length: ${qrData.qrImageBase64.length}'); // Debug log
+        print(
+          'userId: ${qrData.userId}, qrToken: ${qrData.qrToken}',
+        ); // Debug log
+
+        // Limpiar el string base64 removiendo el prefijo si existe
+        String cleanBase64 = qrData.qrImageBase64;
+        if (cleanBase64.startsWith('data:image/')) {
+          final commaIndex = cleanBase64.indexOf(',');
+          if (commaIndex != -1) {
+            cleanBase64 = cleanBase64.substring(commaIndex + 1);
+          }
+        }
+        print('Base64 limpio length: ${cleanBase64.length}'); // Debug log
+
+        if (mounted) {
+          print('Widget está mounted, mostrando dialog...'); // Debug log
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (BuildContext context) {
+              print('Construyendo dialog...'); // Debug log
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Tu Código QR',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Container(
+                          width: 250,
+                          height: 250,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.memory(
+                              base64Decode(cleanBase64),
+                              width: 250,
+                              height: 250,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                print(
+                                  'Error al mostrar imagen QR: $error',
+                                ); // Debug log
+                                return Container(
+                                  width: 250,
+                                  height: 250,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        size: 48,
+                                        color: Colors.red,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Error al cargar QR',
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          print('Cerrando dialog...'); // Debug log
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7012DA),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Cerrar'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+          print('Dialog mostrado exitosamente'); // Debug log
+        } else {
+          print('Widget NO está mounted'); // Debug log
+        }
+      } else {
+        print('QR Data es null - mostrando SnackBar de error'); // Debug log
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Error al generar el código QR - No se recibieron datos',
+              ),
+              backgroundColor: Color.fromARGB(152, 244, 67, 54),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('ERROR CAPTURADO en _showQrCode: $e'); // Debug log
+      print('Tipo de error: ${e.runtimeType}'); // Debug log
+
+      if (mounted) {
+        // Verificar si es realmente un error o una respuesta exitosa mal manejada
+        final errorString = e.toString();
+        if (errorString.contains('"status":"success"')) {
+          print(
+            'Detectada respuesta exitosa mal interpretada como error',
+          ); // Debug log
+
+          try {
+            // Intentar parsear los datos directamente desde la excepción
+            final jsonString = errorString.substring(errorString.indexOf('{'));
+            final errorData = json.decode(jsonString);
+
+            if (errorData['status'] == 'success' && errorData['data'] != null) {
+              print(
+                'Parseando datos exitosos desde la excepción...',
+              ); // Debug log
+              final qrData = QrCode.fromJson(errorData['data']);
+
+              // Limpiar el string base64
+              String cleanBase64 = qrData.qrImageBase64;
+              if (cleanBase64.startsWith('data:image/')) {
+                final commaIndex = cleanBase64.indexOf(',');
+                if (commaIndex != -1) {
+                  cleanBase64 = cleanBase64.substring(commaIndex + 1);
+                }
+              }
+
+              showDialog(
+                context: context,
+                barrierDismissible: true,
+                builder: (BuildContext context) {
+                  return Dialog(
+                    backgroundColor: Colors.transparent,
+                    child: Container(
+                      margin: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Tu Código QR',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: Container(
+                              width: 250,
+                              height: 250,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.memory(
+                                  base64Decode(cleanBase64),
+                                  width: 250,
+                                  height: 250,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 250,
+                                      height: 250,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline,
+                                            size: 48,
+                                            color: Colors.red,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            'Error al cargar QR',
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7012DA),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+              return; // Salir después de mostrar el QR exitosamente
+            }
+          } catch (parseError) {
+            print(
+              'Error al parsear datos de la excepción: $parseError',
+            ); // Debug log
+          }
+        }
+
+        // Si llegamos aquí, es un error real
+        String errorMessage = 'Error al generar el código QR';
+
+        try {
+          if (errorString.contains('Exception: ')) {
+            final jsonString = errorString.substring(errorString.indexOf('{'));
+            final errorData = json.decode(jsonString);
+
+            if (errorData['msg'] != null) {
+              errorMessage = errorData['msg'].toString();
+            }
+          }
+        } catch (parseError) {
+          errorMessage = 'Error de conexión';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 3),
+            backgroundColor: const Color.fromARGB(152, 244, 67, 54),
+          ),
+        );
+      }
+    } finally {
+      print('=== FINALIZANDO _showQrCode ==='); // Debug log
+      if (mounted) {
+        setState(() {
+          isLoadingQr = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
     if (profile == null) {
-      return const Scaffold(
-        body: Center(child: Text('Error cargando perfil')),
-      );
+      return const Scaffold(body: Center(child: Text('Error cargando perfil')));
     }
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Center(
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                CircleAvatar(
-                  radius: 60,
-                  backgroundImage: profile!.photoUrl != null
-                      ? NetworkImage(profile!.photoUrl!)
-                      : null,
-                  backgroundColor: Colors.grey[400],
-                  child: profile!.photoUrl == null
-                      ? const Icon(Icons.person, size: 60, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: Text(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: isUpdating
+                        ? null
+                        : () => _showEditDialog(
+                            'URL de foto de perfil',
+                            profile!.photoUrl ?? '',
+                            'photoUrl',
+                          ),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundImage: profile!.photoUrl != null
+                          ? NetworkImage(profile!.photoUrl!)
+                          : null,
+                      backgroundColor: Colors.grey[400],
+                      child: profile!.photoUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
                     profile!.fullName,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: Text(
-                    profile!.phone ?? '',
+                  const SizedBox(height: 4),
+                  Text(
+                    profile!.phone != null && profile!.phone!.isNotEmpty
+                        ? '+52 ${profile!.phone}'
+                        : '',
                     style: const TextStyle(color: Colors.black54),
-                    textAlign: TextAlign.center,
                   ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: Container(
+                  const SizedBox(height: 24),
+                  Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Color(0xFFF2F2FF),
+                      color: const Color(0xFFF2F2FF),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _InfoBox(
-                          icon: Icons.male,
-                          label: 'Género',
-                          value: profile!.gender == 'M'
-                              ? 'Masculino'
-                              : profile!.gender == 'F'
-                                  ? 'Femenino'
-                                  : profile!.gender,
+                        GestureDetector(
+                          onTap: isUpdating
+                              ? null
+                              : () => _showEditDialog(
+                                  'Género',
+                                  _getGenderDisplay(profile!.gender),
+                                  'gender',
+                                ),
+                          child: _InfoBox(
+                            icon: Icons.male,
+                            label: 'Género',
+                            value: _getGenderDisplay(profile!.gender),
+                          ),
                         ),
-                        _InfoBox(
-                          icon: Icons.calendar_month,
-                          label: 'Nacimiento',
-                          value: profile!.birthDate,
+                        GestureDetector(
+                          onTap: isUpdating
+                              ? null
+                              : () => _showEditDialog(
+                                  'Fecha de nacimiento',
+                                  profile!.birthDate,
+                                  'birthDate',
+                                ),
+                          child: _InfoBox(
+                            icon: Icons.calendar_month,
+                            label: 'Nacimiento',
+                            value: profile!.birthDate,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: const _OptionItem(
+                  const SizedBox(height: 24),
+                  const _OptionItem(
                     title: 'Subscripción',
                     icon: Icons.credit_card,
                     iconColor: Color(0xFF7012DA),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: GestureDetector(
-                    onTap: () async {
-                      try {
-                        final qrCode = await ProfileService.fetchQrCode();
-                        if (qrCode != null && qrCode.qrImageBase64.isNotEmpty) {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('Tu código QR'),
-                              content: SizedBox(
-                                width: 220,
-                                child: Image.memory(
-                                  base64Decode(
-                                    qrCode.qrImageBase64.split(',').last,
-                                  ),
-                                  width: 220,
-                                  height: 220,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text('Cerrar'),
-                                ),
-                              ],
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('No se pudo generar el QR')),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                        );
-                      }
-                    },
-                    child: const _OptionItem(
-                      title: 'QR',
-                      icon: Icons.qr_code_2_rounded,
-                      iconColor: Color(0xFF7012DA),
-                    ),
-                  ),
-                ),
                   const SizedBox(height: 12),
-                  const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.6,
-                    child: Column(
+                  GestureDetector(
+                    onTap: isUpdating || isLoadingQr ? null : _showQrCode,
+                    child: Stack(
                       children: [
-                        _EditableField(label: 'Nombre completo', value: profile!.fullName),
-                        const SizedBox(height: 12),
-                        _EditableField(label: 'Contraseña', value: '********'),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: 300,
-                          child: UpdatePasswordButton(),
+                        const _OptionItem(
+                          title: 'QR',
+                          icon: Icons.qr_code_2_rounded,
+                          iconColor: Color(0xFF7012DA),
                         ),
-                        const SizedBox(height: 12),
-                        _EditableField(label: 'Teléfono', value: profile!.phone ?? ''),
-                        const SizedBox(height: 40),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 300,
-                              child: EditProfileButton(
-                                profile: profile!,
-                                onProfileUpdated: (updatedProfile) {
-                                  setState(() {
-                                    profile = updatedProfile;
-                                  });
-                                },
+                        if (isLoadingQr)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF7012DA),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 300,
-                              child: _ClearPreferencesButton(),
-                            ),
-                          ],
-                        ),
-
+                          ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: isUpdating
+                              ? null
+                              : () => _showEditDialog(
+                                  'Nombre completo',
+                                  profile!.fullName,
+                                  'fullName',
+                                ),
+                          child: _EditableField(
+                            label: 'Nombre completo',
+                            value: profile!.fullName,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: isUpdating
+                              ? null
+                              : () => _showEditDialog(
+                                  'Contraseña',
+                                  '',
+                                  'password',
+                                ),
+                          child: const _EditableField(
+                            label: 'Contraseña',
+                            value: '********',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: isUpdating
+                              ? null
+                              : () => _showEditDialog(
+                                  'Teléfono',
+                                  profile!.phone ?? '',
+                                  'phone',
+                                ),
+                          child: _EditableField(
+                            label: 'Teléfono',
+                            value:
+                                profile!.phone != null &&
+                                    profile!.phone!.isNotEmpty
+                                ? '+52 ${profile!.phone}'
+                                : '',
+                          ),
+                        ),
+                        const SizedBox(height: 150),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            if (isUpdating)
+              Container(
+                color: const Color.fromRGBO(0, 0, 0, 1).withOpacity(0.3),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF7012DA),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -270,7 +1282,7 @@ class _OptionItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Color(0xFFF2F2FF),
+        color: const Color(0xFFF2F2FF),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -303,7 +1315,7 @@ class _EditableField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Color(0xFFF2F2FF),
+        color: const Color(0xFFF2F2FF),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -312,451 +1324,27 @@ class _EditableField extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    )),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                ),
                 const SizedBox(height: 4),
-                Text(value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    )),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
-          ],
-      ),
-    );
-  }
-}
-
-class _ClearPreferencesButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      width: 200, // Ajusta el ancho aquí (puedes cambiar el valor)
-      child: ElevatedButton(
-        onPressed: () async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('first-init-app');
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Preferencias borradas. Reinicia la app para ver el efecto.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+          const Icon(
+            Icons.edit_note_rounded,
+            color: Color.fromRGBO(122, 90, 249, 1),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.delete_forever, color: Colors.white, size: 20),
-            const SizedBox(width: 6),
-            const Text(
-              'Borrar Preferencias',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14, // Texto más pequeño
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-}
-
-// Botón y diálogo para editar perfil
-class EditProfileButton extends StatelessWidget {
-  final Profile profile;
-  final ValueChanged<Profile> onProfileUpdated;
-
-  const EditProfileButton({required this.profile, required this.onProfileUpdated, Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.edit, color: Colors.white, size: 20),
-      label: const Text(
-        'Editar Perfil',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF7A5AF9),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      onPressed: () async {
-        final updatedProfile = await showDialog<Profile>(
-          context: context,
-          builder: (context) => EditProfileDialog(profile: profile),
-        );
-        if (updatedProfile != null) {
-          onProfileUpdated(updatedProfile);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Perfil actualizado'), backgroundColor: Colors.green),
-          );
-        }
-      },
-    );
-  }
-}
-
-class EditProfileDialog extends StatefulWidget {
-  final Profile profile;
-  const EditProfileDialog({required this.profile, Key? key}) : super(key: key);
-
-  @override
-  State<EditProfileDialog> createState() => _EditProfileDialogState();
-}
-
-class _EditProfileDialogState extends State<EditProfileDialog> {
-  late TextEditingController nameController;
-  late TextEditingController phoneController;
-  late TextEditingController birthController;
-  DateTime? birthDate;
-  late TextEditingController genderController;
-  late TextEditingController photoController;
-  bool loading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController = TextEditingController(text: widget.profile.fullName);
-    phoneController = TextEditingController(text: widget.profile.phone);
-    birthController = TextEditingController(text: widget.profile.birthDate);
-    if (widget.profile.birthDate.isNotEmpty) {
-      try {
-        birthDate = DateTime.parse(widget.profile.birthDate);
-      } catch (_) {
-        birthDate = null;
-      }
-    }
-    genderController = TextEditingController(text: widget.profile.gender);
-    photoController = TextEditingController(text: widget.profile.photoUrl ?? '');
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    phoneController.dispose();
-    birthController.dispose();
-    genderController.dispose();
-    photoController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    OutlineInputBorder border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: Color(0xFFDBE0E5)),
-    );
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: const Text('Editar Perfil'),
-      content: Container(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Nombre completo',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: phoneController,
-              decoration: InputDecoration(
-                labelText: 'Teléfono',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF2F2FE),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Color(0xFFDBE0E5)),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      birthDate == null
-                          ? 'Fecha de nacimiento'
-                          : 'Nacimiento: ${birthDate!.toLocal().toString().split(' ')[0]}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: birthDate ?? DateTime(2000),
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          birthDate = picked;
-                          birthController.text = picked.toIso8601String().split('T')[0];
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: genderController.text.isNotEmpty ? genderController.text : null,
-              decoration: InputDecoration(
-                labelText: 'Género',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'M', child: Text('Masculino')),
-                DropdownMenuItem(value: 'F', child: Text('Femenino')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  genderController.text = value ?? '';
-                });
-              },
-              hint: const Text('Selecciona género'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: photoController,
-              decoration: InputDecoration(
-                labelText: 'URL de foto (opcional)',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: loading
-              ? null
-              : () async {
-                  setState(() => loading = true);
-                  try {
-                    final updated = await ProfileService.updateProfile(
-                      widget.profile,
-                      fullName: nameController.text,
-                      phone: phoneController.text,
-                      birthDate: birthController.text.isNotEmpty
-                          ? birthController.text
-                          : (birthDate != null ? birthDate!.toIso8601String().split('T')[0] : ''),
-                      gender: genderController.text,
-                      photoUrl: photoController.text.isNotEmpty ? photoController.text : null,
-                    );
-                    if (updated != null) {
-                      // Setea el perfil en local para reflejar el cambio en toda la app
-                      await ProfileService.setProfile(updated);
-                      Navigator.of(context).pop(updated);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No se pudo actualizar el perfil'), backgroundColor: Colors.red),
-                      );
-                    }
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                    );
-                  } finally {
-                    setState(() => loading = false);
-                  }
-                },
-          child: loading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Guardar'),
-        ),
-      ],
-    );
-  }
-}
-
-// Botón y diálogo para actualizar contraseña
-class UpdatePasswordButton extends StatelessWidget {
-  const UpdatePasswordButton({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.lock, color: Colors.white, size: 20),
-      label: const Text(
-        'Actualizar Contraseña',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF7A5AF9),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      onPressed: () async {
-        await showDialog(
-          context: context,
-          builder: (context) => const UpdatePasswordDialog(),
-        );
-      },
-    );
-  }
-}
-
-class UpdatePasswordDialog extends StatefulWidget {
-  const UpdatePasswordDialog({Key? key}) : super(key: key);
-
-  @override
-  State<UpdatePasswordDialog> createState() => _UpdatePasswordDialogState();
-}
-
-class _UpdatePasswordDialogState extends State<UpdatePasswordDialog> {
-  final TextEditingController currentController = TextEditingController();
-  final TextEditingController newController = TextEditingController();
-  final TextEditingController confirmController = TextEditingController();
-  bool loading = false;
-
-  @override
-  void dispose() {
-    currentController.dispose();
-    newController.dispose();
-    confirmController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    OutlineInputBorder border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: Color(0xFFDBE0E5)),
-    );
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: const Text('Actualizar Contraseña'),
-      content: Container(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentController,
-              decoration: InputDecoration(
-                labelText: 'Contraseña actual',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: newController,
-              decoration: InputDecoration(
-                labelText: 'Nueva contraseña',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmController,
-              decoration: InputDecoration(
-                labelText: 'Confirmar nueva contraseña',
-                border: border,
-                fillColor: Color(0xFFF2F2FE),
-                filled: true,
-              ),
-              obscureText: true,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: loading
-              ? null
-              : () async {
-                  if (newController.text != confirmController.text) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Las contraseñas no coinciden'), backgroundColor: Colors.red),
-                    );
-                    return;
-                  }
-                  setState(() => loading = true);
-                  try {
-                    await ProfileService.updatePassword(
-                      currentController.text,
-                      newController.text,
-                      confirmController.text,
-                    );
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Contraseña actualizada'), backgroundColor: Colors.green),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                    );
-                  } finally {
-                    setState(() => loading = false);
-                  }
-                },
-          child: loading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Guardar'),
-        ),
-      ],
     );
   }
 }

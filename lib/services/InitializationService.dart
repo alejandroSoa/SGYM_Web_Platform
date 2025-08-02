@@ -1,15 +1,11 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'SharedPreferencesService.dart';
 
 class InitializationService {
-  static const String _firstInitKey = 'first-init-app';
-  
   static Future<bool> isFirstTimeUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool(_firstInitKey) ?? false);
+    return await SharedPreferencesService.isFirstTimeUser();
   }
 
-  static Future<void> markFirstTimeDone() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_firstInitKey, true);
+  static Future<bool> markFirstTimeDone() async {
+    return await SharedPreferencesService.markFirstTimeDone();
   }
 }

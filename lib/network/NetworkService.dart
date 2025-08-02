@@ -60,20 +60,6 @@ class NetworkService {
     );
   }
 
-  static Future<http.Response> putWithBody(
-    String fullUrl,
-    Map<String, dynamic> body, {
-    Map<String, String>? headers,
-  }) async {
-    final requestHeaders = await _getHeaders(additionalHeaders: headers);
-    
-    return await http.put(
-      Uri.parse(fullUrl),
-      headers: requestHeaders,
-      body: json.encode(body),
-    );
-  }
-
   static Future<http.Response> delete(String fullUrl, {Map<String, String>? headers}) async {
     final requestHeaders = await _getHeaders(additionalHeaders: headers);
     

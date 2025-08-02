@@ -7,9 +7,9 @@ import '../network/NetworkService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileService {
-  static const String _profileKey = 'user_profile';
+    static const String _profileKey = 'user_profile';
 
-  static Future<void> setProfile(Profile profile) async {
+    static Future<void> setProfile(Profile profile) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_profileKey, json.encode({
       'user_id': profile.userId,
@@ -28,26 +28,28 @@ class ProfileService {
     return Profile.fromJson(json.decode(profileJson));
   }
 
+
   static Future<Profile?> fetchProfile() async {
     final User = await UserService.getUser();
 
     final idPath = await User?['id'];
     final baseUrl = dotenv.env['BUSINESS_BASE_URL'];
     final fullUrl = '$baseUrl/users/$idPath/profile';
-    
+
     final response = await NetworkService.get(fullUrl);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final profile = Profile.fromJson(data['data']);
-        
-        return profile;
-      } else {
-        return null;
-      }
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final profile = Profile.fromJson(data['data']);
+
+      return profile;
+    } else {
+      return null;
+    }
   }
 
-  static Future<Profile?> updateProfile(Profile currentProfile, {
+  static Future<Profile?> updateProfile(
+    Profile currentProfile, {
     String? fullName,
     String? phone,
     String? birthDate,
@@ -58,7 +60,7 @@ class ProfileService {
     final idPath = await user?['id'];
     final baseUrl = dotenv.env['BUSINESS_BASE_URL'];
     final fullUrl = '$baseUrl/users/$idPath/profile';
-    
+
     final body = {
       'full_name': fullName ?? currentProfile.fullName,
       'phone': phone ?? currentProfile.phone,
@@ -77,10 +79,14 @@ class ProfileService {
     }
   }
 
-  static Future<void> updatePassword(String currentPassword, String newPassword, String confirmPassword) async {
+  static Future<void> updatePassword(
+    String currentPassword,
+    String newPassword,
+    String confirmPassword,
+  ) async {
     final baseUrl = dotenv.env['AUTH_BASE_URL'];
     final fullUrl = '$baseUrl/auth/change-password';
-    
+
     final body = {
       'current_password': currentPassword,
       'new_password': newPassword,
@@ -95,26 +101,48 @@ class ProfileService {
   }
 
   static Future<QrCode?> fetchQrCode() async {
-    final User = await UserService.getUser();
-    final idPath = await User?['id'];
-    final baseUrl = dotenv.env['AUTH_BASE_URL'];
-    final fullUrl = '$baseUrl/users/$idPath/qr';
-    final response = await NetworkService.post(fullUrl);
-
-    // Intenta parsear el cuerpo siempre
-    final body = response.body;
     try {
-      final data = json.decode(body);
-      if (data != null && data['data'] != null && data['data']['qr_image_base64'] != null) {
-        return QrCode.fromJson(data['data']);
+      final User = await UserService.getUser();
+      final idPath = await User?['id'];
+      final baseUrl = dotenv.env['AUTH_BASE_URL'];
+      final fullUrl = '$baseUrl/users/$idPath/qr';
+
+      print('Haciendo petición POST a: $fullUrl'); // Debug log
+      final response = await NetworkService.post(fullUrl);
+      print(
+        'Respuesta recibida. Status code: ${response.statusCode}',
+      ); // Debug log
+      print('Response body length: ${response.body.length}'); // Debug log
+
+      if (response.statusCode == 200) {
+        print('Parseando respuesta JSON...'); // Debug log
+        final data = json.decode(response.body);
+        print('JSON parseado. Status: ${data['status']}'); // Debug log
+
+        if (data['status'] == 'success' && data['data'] != null) {
+          print('Creando QrCode desde JSON...'); // Debug log
+          final qr = QrCode.fromJson(data['data']);
+          print(
+            'QrCode creado exitosamente. Base64 length: ${qr.qrImageBase64.length}',
+          ); // Debug log
+          return qr;
+        } else {
+          print(
+            'Error en la respuesta: ${data['msg'] ?? 'Error desconocido'}',
+          ); // Debug log
+          throw Exception(response.body);
+        }
+      } else {
+        print('Error HTTP: ${response.statusCode}'); // Debug log
+        throw Exception(response.body);
       }
-    } catch (_) {
-      // Si no se puede parsear, retorna null
+    } catch (e) {
+      print('Excepción en fetchQrCode: $e'); // Debug log
+      throw e; // Re-lanzar la excepción para que la maneje el código llamador
     }
-    return null;
   }
 
-    //Probar funcionalidad
+  //Probar funcionalidad
   static Future<Profile?> createProfile({
     required int userId,
     required String fullName,
@@ -123,7 +151,6 @@ class ProfileService {
     required String gender,
     String? photoUrl,
   }) async {
-
     final baseUrl = dotenv.env['BUSINESS_BASE_URL'];
     final fullUrl = '$baseUrl/users/profile';
 
@@ -145,6 +172,4 @@ class ProfileService {
       return null;
     }
   }
-
-
 }
