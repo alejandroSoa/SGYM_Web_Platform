@@ -4,8 +4,10 @@ import '../network/NetworkService.dart';
 import '../interfaces/bussiness/diet_food_interface.dart';
 
 class DietService {
-  static String get _baseUrl => dotenv.env['BUSINESS_BASE_URL'] ?? '';
-
+  static String get _baseUrl {
+    final url = dotenv.env['BUSINESS_BASE_URL'] ?? '';
+    return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+  }
   // Listar dietas
   static Future<List<Map<String, dynamic>>?> fetchDiets() async {
     try {

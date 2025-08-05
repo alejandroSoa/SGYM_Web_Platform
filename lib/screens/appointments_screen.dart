@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/AppointmentService.dart';
 import '../services/UserService.dart';
+import '../services/ProfileService.dart';
 import '../interfaces/bussiness/appointment_interface.dart';
 
 class AppointmentsScreen extends StatefulWidget {
@@ -16,10 +17,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   String appointmentType = '';
   String? errorMessage;
   int? userRoleId;
+  String selectedDate = '';
 
   @override
   void initState() {
     super.initState();
+    // Inicializar con la fecha de hoy
+    final today = DateTime.now();
+    selectedDate =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     _loadAppointments();
   }
 
@@ -843,6 +849,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           _WeeklyCalendar(
             userRoleId: userRoleId,
             onCreateAppointment: () => _showCreateAppointmentDialog(context),
+            appointments: appointments,
+            onDateSelected: (date) {
+              setState(() {
+                selectedDate = date;
+              });
+            },
           ),
           const SizedBox(height: 24),
 
@@ -850,9 +862,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Mis Citas',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                _isToday() ? 'Citas de hoy' : 'Citas del día seleccionado',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (!isLoadingAppointments && errorMessage == null)
                 IconButton(
@@ -892,26 +907,42 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 ],
               ),
             )
-          else if (appointments.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Text(
-                  'No tienes citas programadas',
-                  style: TextStyle(color: Colors.black54, fontSize: 16),
-                ),
-              ),
-            )
           else
-            ...appointments
-                .map(
-                  (appointment) => _AppointmentCard(appointment: appointment),
-                )
-                .toList(),
+            Builder(
+              builder: (context) {
+                final selectedDayAppointments = _getSelectedDayAppointments();
+
+                if (selectedDayAppointments.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _isToday()
+                            ? 'Hoy no tienes citas agendadas!'
+                            : 'No hay citas agendadas para este día',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: selectedDayAppointments
+                      .map(
+                        (appointment) =>
+                            _AppointmentCard(appointment: appointment),
+                      )
+                      .toList(),
+                );
+              },
+            ),
 
           const SizedBox(height: 24),
           const Text(
@@ -931,38 +962,37 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
   Widget _AppointmentCard({required dynamic appointment}) {
     String title = '';
-    String subtitle = '';
     String time = '';
     IconData icon = Icons.event;
     Color iconColor = Colors.blue;
+    int? userId;
 
     // Determinar el contenido basado en el tipo de cita
     if (appointment is TrainerAppointment) {
       title = 'Sesión de Entrenamiento';
-      subtitle = 'Cliente ID: ${appointment.userId}';
+      userId = appointment.userId;
       time =
-          '${appointment.date} - ${appointment.startTime} a ${appointment.endTime}';
+          '${_formatTime(appointment.startTime)} a ${_formatTime(appointment.endTime)}';
       icon = Icons.fitness_center;
       iconColor = Colors.orange;
     } else if (appointment is NutritionistAppointment) {
       title = 'Consulta Nutricional';
-      subtitle = 'Cliente ID: ${appointment.userId}';
+      userId = appointment.userId;
       time =
-          '${appointment.date} - ${appointment.startTime} a ${appointment.endTime}';
+          '${_formatTime(appointment.startTime)} a ${_formatTime(appointment.endTime)}';
       icon = Icons.restaurant;
       iconColor = Colors.green;
     } else if (appointment is UserTrainerAppointment) {
       title = 'Sesión con Entrenador';
-      subtitle = 'Entrenador ID: ${appointment.trainerId}';
+      userId = appointment.trainerId; // En este caso obtenemos el entrenador
       time =
-          '${appointment.date} - ${appointment.startTime} a ${appointment.endTime}';
+          '${_formatTime(appointment.startTime)} a ${_formatTime(appointment.endTime)}';
       icon = Icons.person;
       iconColor = Colors.blue;
     } else {
       // Fallback para tipo dinámico
       title = 'Cita';
-      subtitle = 'Ver detalles';
-      time = 'Sin fecha';
+      time = 'Sin horario';
     }
 
     return Container(
@@ -1003,10 +1033,46 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.black54, fontSize: 14),
-                ),
+                // Usar FutureBuilder para obtener el nombre del usuario
+                if (userId != null)
+                  FutureBuilder<String>(
+                    future: _getUserName(userId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Text(
+                          'Cargando...',
+                          style: TextStyle(color: Colors.black54, fontSize: 14),
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text(
+                          appointment is UserTrainerAppointment
+                              ? 'Entrenador ID: $userId'
+                              : 'Cliente ID: $userId',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 14,
+                          ),
+                        );
+                      } else {
+                        final userName = snapshot.data ?? '';
+                        final prefix = appointment is UserTrainerAppointment
+                            ? 'Entrenador: '
+                            : 'Cliente: ';
+                        return Text(
+                          '$prefix$userName',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 14,
+                          ),
+                        );
+                      }
+                    },
+                  )
+                else
+                  const Text(
+                    'Ver detalles',
+                    style: TextStyle(color: Colors.black54, fontSize: 14),
+                  ),
                 const SizedBox(height: 4),
                 Text(
                   time,
@@ -1034,16 +1100,264 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       ),
     );
   }
+
+  // Método auxiliar para obtener el nombre del usuario
+  Future<String> _getUserName(int userId) async {
+    try {
+      final profile = await ProfileService.fetchProfileByUserId(userId);
+      return profile?.fullName ?? 'Usuario $userId';
+    } catch (e) {
+      print('Error obteniendo nombre del usuario $userId: $e');
+      return 'Usuario $userId';
+    }
+  }
+
+  // Método auxiliar para formatear las horas en formato 12 horas
+  String _formatTime(String timeString) {
+    try {
+      // Parsear el tiempo en formato HH:mm:ss
+      final timeParts = timeString.split(':');
+      if (timeParts.length < 2) return timeString;
+
+      int hour = int.parse(timeParts[0]);
+      int minute = int.parse(timeParts[1]);
+
+      // Convertir a formato 12 horas
+      String period = hour >= 12 ? 'pm' : 'am';
+      if (hour == 0) {
+        hour = 12; // Medianoche
+      } else if (hour > 12) {
+        hour = hour - 12; // PM
+      }
+
+      // Formatear sin ceros a la izquierda en la hora
+      String formattedMinute = minute.toString().padLeft(2, '0');
+      return '$hour:$formattedMinute $period';
+    } catch (e) {
+      return timeString; // Retornar el original si hay error
+    }
+  }
+
+  // Método auxiliar para normalizar fechas y manejar diferentes formatos
+  String _normalizeDate(String dateString) {
+    try {
+      // Si la fecha ya está en formato YYYY-MM-DD, devolverla tal como está
+      if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateString)) {
+        return dateString;
+      }
+
+      // Si la fecha está en formato ISO (2025-08-04T00:00:00.000Z), extraer solo la parte de la fecha
+      if (dateString.contains('T')) {
+        return dateString.split('T')[0];
+      }
+
+      // Si no coincide con ningún formato conocido, intentar parsear como DateTime
+      final parsedDate = DateTime.parse(dateString);
+      return '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+    } catch (e) {
+      print('Error normalizando fecha $dateString: $e');
+      return dateString; // Devolver la fecha original si hay error
+    }
+  }
+
+  // Método para verificar si la fecha seleccionada es hoy
+  bool _isToday() {
+    final today = DateTime.now();
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    return selectedDate == todayString;
+  }
+
+  // Método para filtrar las citas del día seleccionado
+  List<dynamic> _getSelectedDayAppointments() {
+    print('=== DEBUG FILTERING APPOINTMENTS ===');
+    print('Selected date: $selectedDate');
+    print('Total appointments: ${appointments.length}');
+
+    final filtered = appointments.where((appointment) {
+      String appointmentDate = '';
+
+      if (appointment is TrainerAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+        print(
+          'TrainerAppointment - Original: ${appointment.date}, Normalized: $appointmentDate',
+        );
+      } else if (appointment is NutritionistAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+        print(
+          'NutritionistAppointment - Original: ${appointment.date}, Normalized: $appointmentDate',
+        );
+      } else if (appointment is UserTrainerAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+        print(
+          'UserTrainerAppointment - Original: ${appointment.date}, Normalized: $appointmentDate',
+        );
+      }
+
+      final matches = appointmentDate == selectedDate;
+      print('Date match: $appointmentDate == $selectedDate = $matches');
+      return matches;
+    }).toList();
+
+    print('Filtered appointments count: ${filtered.length}');
+    return filtered;
+  }
+
+  // Método para filtrar las citas de hoy (mantenido para compatibilidad)
+  List<dynamic> _getTodayAppointments() {
+    final today = DateTime.now();
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    return appointments.where((appointment) {
+      String appointmentDate = '';
+
+      if (appointment is TrainerAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+      } else if (appointment is NutritionistAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+      } else if (appointment is UserTrainerAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+      }
+
+      return appointmentDate == todayString;
+    }).toList();
+  }
 }
 
-class _WeeklyCalendar extends StatelessWidget {
+class _WeeklyCalendar extends StatefulWidget {
   final int? userRoleId;
   final VoidCallback? onCreateAppointment;
+  final List<dynamic> appointments;
+  final Function(String) onDateSelected;
 
-  const _WeeklyCalendar({this.userRoleId, this.onCreateAppointment});
+  const _WeeklyCalendar({
+    this.userRoleId,
+    this.onCreateAppointment,
+    required this.appointments,
+    required this.onDateSelected,
+  });
+
+  @override
+  State<_WeeklyCalendar> createState() => _WeeklyCalendarState();
+}
+
+class _WeeklyCalendarState extends State<_WeeklyCalendar> {
+  int selectedDayIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar con el día de hoy seleccionado
+    selectedDayIndex = _getTodayIndex();
+  }
+
+  List<String> _getWeekDays() {
+    return ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  }
+
+  List<DateTime> _getCurrentWeekDates() {
+    final today = DateTime.now();
+    // Calcular el lunes de la semana actual
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+
+    return List.generate(7, (index) {
+      return startOfWeek.add(Duration(days: index));
+    });
+  }
+
+  List<int> _getCurrentWeekDays() {
+    return _getCurrentWeekDates().map((date) => date.day).toList();
+  }
+
+  int _getTodayIndex() {
+    final today = DateTime.now();
+    // Lunes = 1, Martes = 2, ..., Domingo = 7
+    // Convertir a índice 0-6 donde Lunes = 0, Domingo = 6
+    return today.weekday - 1;
+  }
+
+  String _getSelectedDateString() {
+    final weekDates = _getCurrentWeekDates();
+    if (selectedDayIndex >= 0 && selectedDayIndex < weekDates.length) {
+      final selectedDate = weekDates[selectedDayIndex];
+      return '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+    }
+    return '';
+  }
+
+  List<dynamic> _getAppointmentsForSelectedDay() {
+    final selectedDateString = _getSelectedDateString();
+    print('=== DEBUG CALENDAR FILTERING ===');
+    print('Calendar selected date: $selectedDateString');
+
+    final filtered = widget.appointments.where((appointment) {
+      String appointmentDate = '';
+
+      if (appointment is TrainerAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+        print(
+          'Calendar TrainerAppointment - Original: ${appointment.date}, Normalized: $appointmentDate',
+        );
+      } else if (appointment is NutritionistAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+        print(
+          'Calendar NutritionistAppointment - Original: ${appointment.date}, Normalized: $appointmentDate',
+        );
+      } else if (appointment is UserTrainerAppointment) {
+        appointmentDate = _normalizeDate(appointment.date);
+        print(
+          'Calendar UserTrainerAppointment - Original: ${appointment.date}, Normalized: $appointmentDate',
+        );
+      }
+
+      final matches = appointmentDate == selectedDateString;
+      print(
+        'Calendar date match: $appointmentDate == $selectedDateString = $matches',
+      );
+      return matches;
+    }).toList();
+
+    print('Calendar filtered appointments count: ${filtered.length}');
+    return filtered;
+  }
+
+  // Método auxiliar para normalizar fechas (copiado del componente padre)
+  String _normalizeDate(String dateString) {
+    try {
+      // Si la fecha ya está en formato YYYY-MM-DD, devolverla tal como está
+      if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateString)) {
+        return dateString;
+      }
+
+      // Si la fecha está en formato ISO (2025-08-04T00:00:00.000Z), extraer solo la parte de la fecha
+      if (dateString.contains('T')) {
+        return dateString.split('T')[0];
+      }
+
+      // Si no coincide con ningún formato conocido, intentar parsear como DateTime
+      final parsedDate = DateTime.parse(dateString);
+      return '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+    } catch (e) {
+      print('Error normalizando fecha $dateString: $e');
+      return dateString; // Devolver la fecha original si hay error
+    }
+  }
+
+  void _onDaySelected(int index) {
+    setState(() {
+      selectedDayIndex = index;
+    });
+    widget.onDateSelected(_getSelectedDateString());
+  }
 
   @override
   Widget build(BuildContext context) {
+    final weekDays = _getWeekDays();
+    final weekNumbers = _getCurrentWeekDays();
+    final todayIndex = _getTodayIndex();
+    final selectedAppointments = _getAppointmentsForSelectedDay();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1054,28 +1368,23 @@ class _WeeklyCalendar extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              Text('Sun'),
-              Text('Mon'),
-              Text('Tu'),
-              Text('Wed'),
-              Text('Thu'),
-              Text('Fri'),
-              Text('Sa'),
-            ],
+            children: weekDays.map((day) => Text(day)).toList(),
           ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _DayCircle(text: '1', selected: false),
-              _DayCircle(text: '2', selected: true),
-              _DayCircle(text: '3', selected: false),
-              _DayCircle(text: '4', selected: false),
-              _DayCircle(text: '5', selected: false),
-              _DayCircle(text: '6', selected: false),
-              _DayCircle(text: '7', selected: false),
-            ],
+            children: weekNumbers.asMap().entries.map((entry) {
+              int index = entry.key;
+              int dayNumber = entry.value;
+              return GestureDetector(
+                onTap: () => _onDaySelected(index),
+                child: _DayCircle(
+                  text: dayNumber.toString(),
+                  selected: index == selectedDayIndex,
+                  isToday: index == todayIndex,
+                ),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 16),
           const Align(
@@ -1086,17 +1395,50 @@ class _WeeklyCalendar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              'Cierra gimnasio\nCita con el entrenador',
-              style: TextStyle(color: Colors.black54),
-            ),
+            child: selectedAppointments.isEmpty
+                ? const Text(
+                    'No hay citas programadas para este día',
+                    style: TextStyle(color: Colors.black54),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: selectedAppointments.map((appointment) {
+                      String title = '';
+                      String time = '';
+
+                      if (appointment is TrainerAppointment) {
+                        title = 'Sesión de Entrenamiento';
+                        time =
+                            '${appointment.startTime} - ${appointment.endTime}';
+                      } else if (appointment is NutritionistAppointment) {
+                        title = 'Consulta Nutricional';
+                        time =
+                            '${appointment.startTime} - ${appointment.endTime}';
+                      } else if (appointment is UserTrainerAppointment) {
+                        title = 'Sesión con Entrenador';
+                        time =
+                            '${appointment.startTime} - ${appointment.endTime}';
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '$title - $time',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
           ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
-            child: userRoleId == 5
+            child: widget.userRoleId == 5
                 ? Container(
                     decoration: const BoxDecoration(
                       color: Colors.white,
@@ -1104,7 +1446,7 @@ class _WeeklyCalendar extends StatelessWidget {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.add, color: Colors.black),
-                      onPressed: onCreateAppointment,
+                      onPressed: widget.onCreateAppointment,
                     ),
                   )
                 : const SizedBox.shrink(), // No mostrar nada si no es cliente
@@ -1118,20 +1460,36 @@ class _WeeklyCalendar extends StatelessWidget {
 class _DayCircle extends StatelessWidget {
   final String text;
   final bool selected;
+  final bool isToday;
 
-  const _DayCircle({required this.text, this.selected = false});
+  const _DayCircle({
+    required this.text,
+    this.selected = false,
+    this.isToday = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Color backgroundColor;
+    Color textColor;
+
+    if (selected) {
+      backgroundColor = Colors.deepPurple;
+      textColor = Colors.white;
+    } else if (isToday) {
+      backgroundColor = Colors.deepPurple.withOpacity(0.3);
+      textColor = Colors.deepPurple;
+    } else {
+      backgroundColor = Colors.white;
+      textColor = Colors.black;
+    }
+
     return CircleAvatar(
       radius: 16,
-      backgroundColor: selected ? Colors.deepPurple : Colors.white,
+      backgroundColor: backgroundColor,
       child: Text(
         text,
-        style: TextStyle(
-          color: selected ? Colors.white : Colors.black,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
       ),
     );
   }

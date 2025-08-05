@@ -513,30 +513,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
         case 'fullName':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
+            userId: profile!.userId,
             fullName: newValue,
           );
-          break;
-        case 'phone':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
+            userId: profile!.userId,
             phone: newValue,
           );
-          break;
-        case 'birthDate':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
+            userId: profile!.userId,
             birthDate: newValue,
           );
-          break;
-        case 'gender':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
+            userId: profile!.userId,
             gender: newValue,
           );
-          break;
-        case 'photoUrl':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
+            userId: profile!.userId,
+            photoUrl: newValue,
+          );
+          updatedProfile = await ProfileService.updateProfile(
+            profile!,
+            userId: profile!.userId,
             photoUrl: newValue,
           );
           break;
@@ -710,7 +712,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       print('Llamando a ProfileService.fetchQrCode()...'); // Debug log
-      final qrData = await ProfileService.fetchQrCode();
+      final qrData = await ProfileService().fetchQrCode();
       print('Respuesta de ProfileService recibida exitosamente'); // Debug log
 
       if (qrData != null) {

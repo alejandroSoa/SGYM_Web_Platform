@@ -4,8 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../network/NetworkService.dart';
 
 class FoodService {
-  static String get _baseUrl => dotenv.env['BUSINESS_BASE_URL'] ?? '';
-
+  static String get _baseUrl {
+    final url = dotenv.env['BUSINESS_BASE_URL'] ?? '';
+    return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+  }
   // Listar alimentos
   static Future<FoodList?> fetchFoods() async {
     final fullUrl = '$_baseUrl/foods';
