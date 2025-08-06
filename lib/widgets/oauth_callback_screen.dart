@@ -28,20 +28,19 @@ class _OAuthCallbackScreenState extends State<OAuthCallbackScreen> {
 
     if (token != null && token.isNotEmpty) {
       await UserService.setToken(token);
-      //await UserService.fetchUser();
       await InitializationService.markFirstTimeDone();
 
       final userData = await UserService.fetchUser();
-      if (userData != null && userData is List && userData.isNotEmpty) {
-        final user = userData[0];
-        await UserService.setUser(user.toJson());
+      print('Datos del usuario obtenidos: $userData');
+      if (userData != null  && userData.isNotEmpty) {
+        await UserService.setUser(userData);
 
         final profile = await ProfileService.fetchProfile();
         if (profile != null) {
           await ProfileService.setProfile(profile);
         }
         print('Perfil guardado: ${profile?.toJson()}');
-        print('Usuario guardado: ${user.toJson()}');
+        print('Usuario guardado: $userData');
       }
 
       html.window.history.replaceState(

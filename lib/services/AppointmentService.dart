@@ -179,8 +179,8 @@ class AppointmentService {
         'user_id': userId,
         'trainer_id': trainerId,
         'date': date,
-        'start_time': startTime,
-        'end_time': endTime,
+        'start_time': startTime.substring(0, 5),
+        'end_time': endTime.substring(0, 5),
       };
 
       print('=== CREATE TRAINER APPOINTMENT SERVICE DEBUG ===');
@@ -230,8 +230,8 @@ class AppointmentService {
         'user_id': userId,
         'nutritionist_id': nutritionistId,
         'date': date,
-        'start_time': startTime,
-        'end_time': endTime,
+        'start_time': startTime.substring(0, 5),
+        'end_time': endTime.substring(0, 5),
       };
 
       print('=== CREATE NUTRITIONIST APPOINTMENT SERVICE DEBUG ===');
