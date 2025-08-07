@@ -2,7 +2,6 @@ class TrainerSchedule {
   final int id;
   final int userId;
   final int trainerId;
-  final String date;
   final String startTime;
   final String endTime;
 
@@ -10,7 +9,6 @@ class TrainerSchedule {
     required this.id,
     required this.userId,
     required this.trainerId,
-    required this.date,
     required this.startTime,
     required this.endTime,
   });
@@ -18,22 +16,20 @@ class TrainerSchedule {
   factory TrainerSchedule.fromJson(Map<String, dynamic> json) {
     return TrainerSchedule(
       id: json['id'],
-      userId: json['userId'],
-      trainerId: json['trainerId'],
-      date: json['date'],
-      startTime: json['startTime'],
-      endTime: json['endTime'],
+      userId: json['user_id'],
+      trainerId: json['trainer_id'],
+      startTime: json['start_time'],
+      endTime: json['end_time'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
-      'trainerId': trainerId,
-      'date': date,
-      'startTime': startTime,
-      'endTime': endTime,
+      'user_id': userId,
+      'trainer_id': trainerId,
+      'start_time': startTime,
+      'end_time': endTime,
     };
   }
 }

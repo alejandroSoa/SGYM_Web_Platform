@@ -1,10 +1,7 @@
-2025/08/05-11:18:33.384 33dc Log #3: 125 ops saved to Table #7 OK
-2025/08/05-11:18:33.408 33dc Archiving C:\Users\elcho\AppData\Local\Temp\flutter_tools.e6b7357\flutter_tools_chrome_device.e2913572\Default\Site Characteristics Database/000003.log: OK
-2025/08/05-11:18:33.474 33dc Log #6: 5 ops saved to Table #8 OK
-2025/08/05-11:18:33.474 33dc Archiving C:\Users\elcho\AppData\Local\Temp\flutter_tools.e6b7357\flutter_tools_chrome_device.e2913572\Default\Site Characteristics Database/000006.log: OK
-2025/08/05-11:18:33.475 33dc Table #4: 125 entries OK
-2025/08/05-11:18:33.475 33dc Table #6: 125 entries OK
-2025/08/05-11:18:33.476 33dc Table #7: 125 entries OK
-2025/08/05-11:18:33.476 33dc Table #8: 5 entries OK
-2025/08/05-11:18:33.478 33dc Archiving C:\Users\elcho\AppData\Local\Temp\flutter_tools.e6b7357\flutter_tools_chrome_device.e2913572\Default\Site Characteristics Database/MANIFEST-000001: OK
-2025/08/05-11:18:33.622 33dc **** Repaired leveldb C:\Users\elcho\AppData\Local\Temp\flutter_tools.e6b7357\flutter_tools_chrome_device.e2913572\Default\Site Characteristics Database; recovered 4 files; 8076 bytes. Some data may have been lost. ****
+2025/08/07-09:53:58.827 4750 Reusing MANIFEST C:\Users\elcho\AppData\Local\Temp\flutter_tools.553f5f0e\flutter_tools_chrome_device.9e8a64de\Default\Site Characteristics Database/MANIFEST-000001
+2025/08/07-09:53:58.830 4750 Recovering log #10
+2025/08/07-09:53:58.831 4750 Reusing old log C:\Users\elcho\AppData\Local\Temp\flutter_tools.553f5f0e\flutter_tools_chrome_device.9e8a64de\Default\Site Characteristics Database/000010.log 
+2025/08/07-09:53:58.831 4750 Delete type=0 #3
+2025/08/07-09:53:58.831 4750 Delete type=2 #4
+2025/08/07-09:53:58.831 4750 Delete type=2 #6
+2025/08/07-09:53:58.831 4750 Delete type=0 #6

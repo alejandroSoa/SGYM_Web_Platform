@@ -127,7 +127,7 @@ class ProfileService {
           print('Creando QrCode desde JSON...'); // Debug log
           final qr = QrCode.fromJson(data['data']);
           print(
-            'QrCode creado exitosamente. Base64 length: ${qr.qr_image_base64.length}',
+            'QrCode creado exitosamente. Base64 length: ${qr.qrImageBase64.length}',
           ); // Debug log
           return qr;
         } else {

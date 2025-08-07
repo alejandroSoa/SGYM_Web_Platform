@@ -26,7 +26,7 @@ class Profile {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
       'full_name': fullName,

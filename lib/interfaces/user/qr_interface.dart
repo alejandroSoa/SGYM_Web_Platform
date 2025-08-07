@@ -16,6 +16,4 @@ class QrCode {
       qrImageBase64: json['qr_image_base64'],
     );
   }
-
-  get qr_image_base64 => null;
 }
