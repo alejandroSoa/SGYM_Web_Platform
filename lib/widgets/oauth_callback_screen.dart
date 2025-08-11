@@ -17,48 +17,51 @@ class _OAuthCallbackScreenState extends State<OAuthCallbackScreen> {
     _handleRedirect();
   }
 
-  Future<void> _handleRedirect() async {
-    final uri = Uri.base;
-    print('URI base: $uri');
-    print('Query parameters: ${uri.queryParameters}');
+Future<void> _handleRedirect() async {
+  final fullUrl = html.window.location.href;
+  print('Full URL: $fullUrl');
 
-    // Extraer el token de los parámetros de la query
-    String? token = uri.queryParameters['access_token'];
-    String? refreshToken = uri.queryParameters['refresh_token'];
+  // Sacar solo la parte antes del #
+  final uriBeforeHash = fullUrl.split('#').first;
+  final uri = Uri.parse(uriBeforeHash);
 
-    if (token != null && token.isNotEmpty) {
-      await UserService.setToken(token);
-      await InitializationService.markFirstTimeDone();
+  String? token = uri.queryParameters['access_token'];
+  String? refreshToken = uri.queryParameters['refresh_token'];
 
-      final userData = await UserService.fetchUser();
-      print('Datos del usuario obtenidos: $userData');
-      if (userData != null  && userData.isNotEmpty) {
-        await UserService.setUser(userData);
+  print('Access token: $token');
+  print('Refresh token: $refreshToken');
 
-        final profile = await ProfileService.fetchProfile();
-        if (profile != null) {
-          await ProfileService.setProfile(profile);
-        }
-        print('Perfil guardado: ${profile?.toJson()}');
-        print('Usuario guardado: $userData');
+  if (token != null && token.isNotEmpty) {
+    await UserService.setToken(token);
+    await InitializationService.markFirstTimeDone();
+
+    final userData = await UserService.fetchUser();
+    if (userData != null && userData.isNotEmpty) {
+      await UserService.setUser(userData);
+
+      final profile = await ProfileService.fetchProfile();
+      if (profile != null) {
+        await ProfileService.setProfile(profile);
       }
-
-      html.window.history.replaceState(
-        null, 
-        'OAuth Redirect', 
-        html.window.location.pathname
-      );
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MainLayout()),
-        );
-      }
-    } else {
-      print("No se encontró el token en la redirección.");
     }
+
+    // Limpiar la URL
+    html.window.history.replaceState(
+      null,
+      'OAuth Redirect',
+      html.window.location.pathname,
+    );
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => MainLayout()),
+      );
+    }
+  } else {
+    print("No se encontró el token en la redirección.");
   }
+}
 
   @override
   Widget build(BuildContext context) {

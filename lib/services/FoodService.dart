@@ -12,6 +12,7 @@ class FoodService {
   static Future<FoodList?> fetchFoods() async {
     final fullUrl = '$_baseUrl/foods';
     final response = await NetworkService.get(fullUrl);
+    print('[FOOD_SERVICE][fetchFoods] status: ${response.statusCode}, body: ${response.body}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body)['data'] as List;
       return data.map((e) => Food.fromJson(e)).toList();
@@ -31,9 +32,10 @@ class FoodService {
       'name': name,
       'grams': grams,
       'calories': calories,
-      'other_info': otherInfo,
+      'otherInfo': otherInfo,
     };
     final response = await NetworkService.post(fullUrl, body: body);
+    print('[FOOD_SERVICE][createFood] status: ${response.statusCode}, body: ${response.body}');
     if (response.statusCode == 201) {
       final data = json.decode(response.body)['data'];
       return Food.fromJson(data);
@@ -54,9 +56,10 @@ class FoodService {
       'name': name,
       'grams': grams,
       'calories': calories,
-      'other_info': otherInfo,
+      'otherInfo': otherInfo,
     };
     final response = await NetworkService.put(fullUrl, body: body);
+    print('[FOOD_SERVICE][updateFood] status: ${response.statusCode}, body: ${response.body}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body)['data'];
       return Food.fromJson(data);
@@ -68,6 +71,7 @@ class FoodService {
   static Future<Food?> fetchFoodById(int id) async {
     final fullUrl = '$_baseUrl/foods/$id';
     final response = await NetworkService.get(fullUrl);
+    print('[FOOD_SERVICE][fetchFoodById] status: ${response.statusCode}, body: ${response.body}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body)['data'];
       return Food.fromJson(data);
@@ -79,6 +83,7 @@ class FoodService {
   static Future<bool> deleteFood(int id) async {
     final fullUrl = '$_baseUrl/foods/$id';
     final response = await NetworkService.delete(fullUrl);
+    print('[FOOD_SERVICE][deleteFood] status: ${response.statusCode}, body: ${response.body}');
     return response.statusCode == 200;
   }
 }

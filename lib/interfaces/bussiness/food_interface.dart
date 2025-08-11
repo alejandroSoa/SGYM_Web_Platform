@@ -51,7 +51,7 @@ class Food {
       'name': name,
       'grams': grams,
       'calories': calories,
-      'other_info': otherInfo,
+      'otherInfo': otherInfo, // Usar camelCase para coincidir con el backend
     };
   }
 }

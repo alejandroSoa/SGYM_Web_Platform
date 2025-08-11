@@ -22,7 +22,7 @@ class AuthException implements Exception {
 
 class AuthService {
   static Future<bool> authenticateWithOAuth() async {
-    const redirectUri = 'http://localhost:60359/#/oauth-callback';
+    final redirectUri = '${html.window.location.origin}/#/oauth-callback';
     final authUrl = Uri.http(
       '143.110.150.81',
       '/oauth/login',

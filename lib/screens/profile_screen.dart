@@ -3,6 +3,11 @@ import '../interfaces/user/profile_interface.dart';
 import '../interfaces/user/qr_interface.dart';
 import '../services/ProfileService.dart';
 import 'dart:convert';
+// Solo para Flutter web
+// ignore: avoid_web_libraries_in_flutter
+// import 'dart:html' as html;
+// Agregar import para SubscriptionWebView
+import '../widgets/SubscriptionWebView.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -509,6 +514,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       Profile? updatedProfile;
 
+      print('[PROFILE_SCREEN][_updateField] Actualizando $fieldKey con valor: $newValue');
+
       switch (fieldKey) {
         case 'fullName':
           updatedProfile = await ProfileService.updateProfile(
@@ -516,26 +523,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
             userId: profile!.userId,
             fullName: newValue,
           );
+          break;
+        case 'phone':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
             userId: profile!.userId,
             phone: newValue,
           );
+          break;
+        case 'birthDate':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
             userId: profile!.userId,
             birthDate: newValue,
           );
+          break;
+        case 'gender':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
             userId: profile!.userId,
             gender: newValue,
           );
-          updatedProfile = await ProfileService.updateProfile(
-            profile!,
-            userId: profile!.userId,
-            photoUrl: newValue,
-          );
+          break;
+        case 'photoUrl':
           updatedProfile = await ProfileService.updateProfile(
             profile!,
             userId: profile!.userId,
@@ -543,6 +553,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
           break;
       }
+
+      print('[PROFILE_SCREEN][_updateField] updatedProfile: $updatedProfile');
 
       if (updatedProfile != null) {
         setState(() {
@@ -570,6 +582,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
+      print('[PROFILE_SCREEN][_updateField] Error: $e');
       if (mounted) {
         String errorMessage = 'Error de conexión';
 
@@ -704,6 +717,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Nuevo método para abrir la suscripción en WebView
+  Future<void> _showSubscription() async {
+    print('=== INICIANDO _showSubscription ===');
+    try {
+      const String subscriptionUrl = 'http://146.190.130.50';
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => SubscriptionWebView(
+            subscriptionUrl: subscriptionUrl,
+          ),
+        ),
+      );
+      if (result != null && result is Map) {
+        print('Resultado del WebView de suscripción: $result');
+        if (result['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Suscripción procesada exitosamente'),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } else if (result['error'] != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error en suscripción: ${result['error']}'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('Error al abrir WebView de suscripción: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir la página de suscripción: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+    print('=== FINALIZANDO _showSubscription ===');
+  }
+
   Future<void> _showQrCode() async {
     print('=== INICIANDO _showQrCode ==='); // Debug log
     setState(() {
@@ -738,104 +802,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
             barrierDismissible: true,
             builder: (BuildContext context) {
               print('Construyendo dialog...'); // Debug log
-              return Dialog(
-                backgroundColor: Colors.transparent,
-                child: Container(
-                  margin: const EdgeInsets.all(20),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+              return Scaffold(
+                backgroundColor: Colors.white,
+                body: SafeArea(
+                  child: Stack(
                     children: [
-                      const Text(
-                        'Tu Código QR',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Column(
+                          children: [
+                            // ...existing code...
+                            const SizedBox(height: 24),
+                            // Botón de suscripción para entorno web
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: ElevatedButton.icon(
+                                // Cambiar onPressed para usar _showSubscription
+                                onPressed: isUpdating ? null : () {
+                                  Navigator.of(context).pop();
+                                  _showSubscription();
+                                },
+                                icon: const Icon(Icons.credit_card, color: Color(0xFF7012DA)),
+                                label: const Text('Ir a Suscripción'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF2F2FF),
+                                  foregroundColor: const Color(0xFF7012DA),
+                                  minimumSize: const Size.fromHeight(48),
+                                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ),
+                            // ...existing code...
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Container(
-                          width: 250,
-                          height: 250,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.memory(
-                              base64Decode(cleanBase64),
-                              width: 250,
-                              height: 250,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                print(
-                                  'Error al mostrar imagen QR: $error',
-                                ); // Debug log
-                                return Container(
-                                  width: 250,
-                                  height: 250,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        size: 48,
-                                        color: Colors.red,
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'Error al cargar QR',
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                      if (isUpdating)
+                        Container(
+                          color: const Color.fromRGBO(0, 0, 0, 1).withOpacity(0.3),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF7012DA),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          print('Cerrando dialog...'); // Debug log
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7012DA),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Cerrar'),
-                      ),
                     ],
                   ),
                 ),
               );
             },
           );
-          print('Dialog mostrado exitosamente'); // Debug log
         } else {
           print('Widget NO está mounted'); // Debug log
         }
@@ -1124,10 +1145,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const _OptionItem(
-                    title: 'Subscripción',
-                    icon: Icons.credit_card,
-                    iconColor: Color(0xFF7012DA),
+                  // Cambiar el widget de suscripción para que sea interactivo
+                  GestureDetector(
+                    onTap: isUpdating ? null : _showSubscription,
+                    child: const _OptionItem(
+                      title: 'Subscripción',
+                      icon: Icons.credit_card,
+                      iconColor: Color(0xFF7012DA),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   GestureDetector(
@@ -1270,6 +1295,7 @@ class _InfoBox extends StatelessWidget {
     );
   }
 }
+
 
 class _OptionItem extends StatelessWidget {
   final String title;

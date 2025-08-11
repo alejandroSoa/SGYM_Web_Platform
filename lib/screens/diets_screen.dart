@@ -163,7 +163,7 @@ class _DietsScreenState extends State<DietsScreen> {
           // Mensaje cuando no hay alimentos
           Container(
             width: double.infinity,
-            height: 200, // Altura fija para consistencia
+            height: 100, // Altura fija para consistencia
             padding: const EdgeInsets.all(32),
             child: Center(
               child: Text(
@@ -1809,6 +1809,7 @@ class _DietsScreenState extends State<DietsScreen> {
               // Sección de Alimentos en contenedor destacado
               Container(
                 width: double.infinity,
+                height: 300,
                 decoration: BoxDecoration(
                   color: const Color(0xFFCAD1D9),
                   borderRadius: BorderRadius.circular(20),
@@ -2195,6 +2196,8 @@ class _DietFoodsManagerState extends State<_DietFoodsManager> {
               itemCount: dietFoods.length,
               itemBuilder: (context, index) {
                 final dietFood = dietFoods[index];
+                print(dietFood);
+                final food = dietFood['food'] ?? {};
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
@@ -2208,14 +2211,14 @@ class _DietFoodsManagerState extends State<_DietFoodsManager> {
                       vertical: 8,
                     ),
                     title: Text(
-                      dietFood['name'] ?? 'Alimento desconocido',
+                      food['name'] ?? 'Alimento desconocido',
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
                     ),
                     subtitle: Text(
-                      '${dietFood['grams'] ?? 0}g - ${dietFood['calories'] ?? 0} cal',
+                      '${food['grams'] ?? 0}g - ${food['calories'] ?? 0} cal',
                       style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                     trailing: IconButton(

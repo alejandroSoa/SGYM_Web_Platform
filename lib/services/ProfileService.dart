@@ -73,16 +73,25 @@ class ProfileService {
       'photo_url': photoUrl ?? currentProfile.photoUrl,
     };
 
+    print('[PROFILE_SERVICE][updateProfile] URL: $fullUrl');
+    print('[PROFILE_SERVICE][updateProfile] Body: $body');
+
     final response = await NetworkService.put(fullUrl, body: body);
+
+    print('[PROFILE_SERVICE][updateProfile] Status code: ${response.statusCode}');
+    print('[PROFILE_SERVICE][updateProfile] Response body: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return Profile.fromJson(data['data']);
+      final profile = Profile.fromJson(data['data']);
+      print('[PROFILE_SERVICE][updateProfile] Profile actualizado correctamente.');
+      return profile;
     } else {
+      print('[PROFILE_SERVICE][updateProfile] Error: ${response.body}');
       throw Exception(response.body);
     }
   }
-
+  
   static Future<void> updatePassword(
     String currentPassword,
     String newPassword,
@@ -109,7 +118,7 @@ class ProfileService {
       final User = await UserService.getUser();
       final idPath = await User?['id'];
       final baseUrl = dotenv.env['AUTH_BASE_URL'];
-      final fullUrl = '$baseUrl/users/$idPath/qr';
+      final fullUrl = '$baseUrl/oauth/users/$idPath/qr';
 
       print('Haciendo petición POST a: $fullUrl'); // Debug log
       final response = await NetworkService.post(fullUrl);
